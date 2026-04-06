@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduHub — Platform Belajar Modern</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="min-h-screen">
+
+  <!-- NOISE OVERLAY -->
+  <div class="noise-overlay"></div>
+
+  <!-- ===== AUTH MODAL ===== -->
+  <div id="authModal" class="modal-backdrop hidden">
+    <div class="modal-box glass-card">
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="signin">Masuk</button>
+        <button class="auth-tab" data-tab="signup">Daftar</button>
+      </div>
+
+      <!-- Sign In -->
+      <div id="tabSignin" class="auth-form">
+        <div class="form-header">
+          <div class="brand-icon">📚</div>
+          <h2>Selamat Datang</h2>
+          <p>Masuk ke akun EduHub kamu</p>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="signinEmail" placeholder="email@sekolah.id" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="signinPassword" placeholder="••••••••" />
+        </div>
+        <div id="signinError" class="error-msg hidden"></div>
+        <button class="btn-primary" onclick="handleSignIn()">
+          <span>Masuk Sekarang</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <div class="divider"><span>atau</span></div>
+        <button class="btn-ghost" onclick="enterGuestMode()">👤 Masuk sebagai Tamu</button>
+      </div>
+
+      <!-- Sign Up -->
+      <div id="tabSignup" class="auth-form hidden">
+        <div class="form-header">
+          <div class="brand-icon">✨</div>
+          <h2>Buat Akun</h2>
+          <p>Bergabung dengan ribuan pelajar</p>
+        </div>
+        <div class="form-group">
+          <label>Nama Lengkap</label>
+          <input type="text" id="signupName" placeholder="Nama kamu" />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="signupEmail" placeholder="email@sekolah.id" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="signupPassword" placeholder="Min. 6 karakter" />
+        </div>
+        <div class="form-group">
+          <label>Kode Akses <span class="optional">(opsional)</span></label>
+          <input type="text" id="signupCode" placeholder="Masukkan kode operator jika punya" />
+          <small>Kode operator akan memberikan akses admin</small>
+        </div>
+        <div id="signupError" class="error-msg hidden"></div>
+        <button class="btn-primary" onclick="handleSignUp()">
+          <span>Daftar Sekarang</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <div class="divider"><span>atau</span></div>
+        <button class="btn-ghost" onclick="enterGuestMode()">👤 Masuk sebagai Tamu</button>
+      </div>
+
+      <button class="modal-close" onclick="closeAuthModal()">✕</button>
+    </div>
+  </div>
+
+  <!-- ===== NOTIFICATION ===== -->
+  <div id="notification" class="notification hidden"></div>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav id="navbar" class="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="#">
+        <span class="brand-logo">⚡</span>
+        <span>EduHub</span>
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a href="#" onclick="showPage('home')" class="nav-link active">Beranda</a>
+        <a href="#" onclick="showPage('materi')" class="nav-link">Materi</a>
+        <a href="#" onclick="showPage('ai')" class="nav-link nav-link-ai">🤖 AI Tools</a>
+      </div>
+      <div class="nav-actions">
+        <div id="navUser" class="hidden">
+          <div class="user-pill" onclick="toggleUserMenu()">
+            <div class="user-avatar" id="userAvatar">S</div>
+            <span id="userDisplayName">Siswa</span>
+            <span id="userRoleBadge" class="role-badge">siswa</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="user-menu hidden" id="userMenu">
+            <a href="#" onclick="showPage('dashboard')">📊 Dashboard</a>
+            <a href="#" onclick="showPage('favorites')">❤️ Favorit</a>
+            <a href="#" onclick="showPage('history')">🕒 Riwayat</a>
+            <div id="adminMenuItems" class="hidden">
+              <div class="menu-divider"></div>
+              <a href="#" onclick="showPage('admin')">⚙️ Panel Admin</a>
+            </div>
+            <div class="menu-divider"></div>
+            <a href="#" onclick="handleLogout()" class="text-red-400">🚪 Keluar</a>
+          </div>
+        </div>
+        <div id="navGuest" class="hidden">
+          <span class="guest-badge">👤 Tamu</span>
+          <button class="btn-sm" onclick="openAuthModal()">Login</button>
+        </div>
+        <div id="navAuth">
+          <button class="btn-sm btn-outline" onclick="openAuthModal('signin')">Masuk</button>
+          <button class="btn-sm" onclick="openAuthModal('signup')">Daftar</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== PAGES ===== -->
+  <main id="mainContent">
+
+    <!-- HOME PAGE -->
+    <div id="pageHome" class="page">
+      <section class="hero">
+        <div class="hero-bg">
+          <div class="orb orb-1"></div>
+          <div class="orb orb-2"></div>
+          <div class="orb orb-3"></div>
+        </div>
+        <div class="hero-content">
+          <div class="hero-badge">🎓 Platform Belajar #1 Indonesia</div>
+          <h1 class="hero-title">
+            Belajar Lebih
+            <span class="gradient-text">Cerdas</span>
+            <br/>dengan EduHub
+          </h1>
+          <p class="hero-desc">Akses ribuan materi pelajaran, soal latihan, dan asisten AI — semua dalam satu platform modern.</p>
+          <div class="hero-actions">
+            <button class="btn-primary btn-lg" onclick="openAuthModal('signup')">
+              Mulai Belajar Gratis
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+            <button class="btn-ghost btn-lg" onclick="enterGuestMode()">
+              👤 Coba sebagai Tamu
+            </button>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-item"><span class="stat-num">2.4K+</span><span>Materi</span></div>
+            <div class="stat-divider"></div>
+            <div class="stat-item"><span class="stat-num">12K+</span><span>Pelajar</span></div>
+            <div class="stat-divider"></div>
+            <div class="stat-item"><span class="stat-num">98%</span><span>Puas</span></div>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="floating-card card-1 glass-card">
+            <span>📐</span> Matematika Kelas 10
+            <div class="tag">Trending 🔥</div>
+          </div>
+          <div class="floating-card card-2 glass-card">
+            <span>🔬</span> Fisika Modern
+            <div class="tag">Baru ✨</div>
+          </div>
+          <div class="floating-card card-3 glass-card">
+            <span>🤖</span> AI Summary
+            <div class="tag">Pro</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Trending Materi -->
+      <section class="section">
+        <div class="section-header">
+          <h2>🔥 Materi Trending</h2>
+          <button class="btn-link" onclick="showPage('materi')">Lihat Semua →</button>
+        </div>
+        <div class="materi-grid" id="trendingGrid">
+          <!-- filled by JS -->
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section class="section">
+        <div class="section-header">
+          <h2>✨ Fitur Unggulan</h2>
+        </div>
+        <div class="features-grid">
+          <div class="feature-card glass-card">
+            <div class="feature-icon">📚</div>
+            <h3>Materi Lengkap</h3>
+            <p>PDF, PPT, Video — semua format tersedia untuk semua mata pelajaran dan kelas.</p>
+          </div>
+          <div class="feature-card glass-card">
+            <div class="feature-icon">🤖</div>
+            <h3>AI Assistant</h3>
+            <p>Ringkasan otomatis dan generate soal dari materi — powered by AI canggih.</p>
+            <span class="locked-tag">Login Required</span>
+          </div>
+          <div class="feature-card glass-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Realtime Update</h3>
+            <p>Komentar dan materi baru muncul langsung tanpa reload halaman.</p>
+          </div>
+          <div class="feature-card glass-card">
+            <div class="feature-icon">❤️</div>
+            <h3>Favorit & Riwayat</h3>
+            <p>Simpan materi favorit dan lacak progress belajar kamu dengan mudah.</p>
+            <span class="locked-tag">Login Required</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- MATERI PAGE -->
+    <div id="pageMateri" class="page hidden">
+      <div class="page-header">
+        <h1>📚 Daftar Materi</h1>
+        <p>Temukan materi pelajaran yang kamu butuhkan</p>
+      </div>
+
+      <!-- Search & Filter -->
+      <div class="search-bar glass-card">
+        <div class="search-input-wrap">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="searchInput" placeholder="Cari materi, mapel, kelas..." oninput="filterMateri()" />
+        </div>
+        <div class="filter-wrap">
+          <select id="filterKelas" onchange="filterMateri()">
+            <option value="">Semua Kelas</option>
+            <option value="10">Kelas 10</option>
+            <option value="11">Kelas 11</option>
+            <option value="12">Kelas 12</option>
+          </select>
+          <select id="filterMapel" onchange="filterMateri()">
+            <option value="">Semua Mapel</option>
+            <option value="matematika">Matematika</option>
+            <option value="fisika">Fisika</option>
+            <option value="kimia">Kimia</option>
+            <option value="biologi">Biologi</option>
+            <option value="bahasa_indonesia">Bhs. Indonesia</option>
+            <option value="bahasa_inggris">Bhs. Inggris</option>
+            <option value="sejarah">Sejarah</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Upload Button (Admin) -->
+      <div id="uploadBtn" class="hidden">
+        <button class="btn-primary" onclick="showPage('upload')">
+          ➕ Upload Materi Baru
+        </button>
+      </div>
+
+      <div class="materi-grid" id="materiGrid">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- MATERI DETAIL PAGE -->
+    <div id="pageDetail" class="page hidden">
+      <button class="btn-back" onclick="showPage('materi')">← Kembali</button>
+      <div id="detailContent"></div>
+    </div>
+
+    <!-- AI PAGE -->
+    <div id="pageAi" class="page hidden">
+      <div id="aiLocked" class="locked-page hidden">
+        <div class="lock-box glass-card">
+          <div class="lock-icon">🔒</div>
+          <h2>Fitur AI Terkunci</h2>
+          <p>Silakan login untuk mengakses fitur AI Assistant EduHub.</p>
+          <button class="btn-primary" onclick="openAuthModal()">Login Sekarang</button>
+          <button class="btn-ghost" onclick="enterGuestMode()">Lanjut sebagai Tamu</button>
+        </div>
+      </div>
+      <div id="aiContent" class="hidden">
+        <div class="page-header">
+          <h1>🤖 AI Assistant</h1>
+          <p>Ringkasan otomatis & generator soal berbasis AI</p>
+        </div>
+        <div class="ai-grid">
+          <!-- Summarizer -->
+          <div class="ai-card glass-card">
+            <div class="ai-card-header">
+              <span class="ai-icon">📝</span>
+              <div>
+                <h3>Ringkasan Otomatis</h3>
+                <p>Paste teks materi, AI akan meringkasnya</p>
+              </div>
+            </div>
+            <textarea id="summaryInput" placeholder="Tempelkan teks materi di sini..." rows="6"></textarea>
+            <button class="btn-primary" onclick="generateSummary()">
+              ⚡ Buat Ringkasan
+            </button>
+            <div id="summaryOutput" class="ai-output hidden"></div>
+          </div>
+
+          <!-- Question Generator -->
+          <div class="ai-card glass-card">
+            <div class="ai-card-header">
+              <span class="ai-icon">❓</span>
+              <div>
+                <h3>Generate Soal</h3>
+                <p>AI membuat soal latihan dari teks materi</p>
+              </div>
+            </div>
+            <textarea id="soalInput" placeholder="Tempelkan teks materi untuk dibuat soalnya..." rows="6"></textarea>
+            <div class="form-group">
+              <label>Jumlah Soal</label>
+              <select id="soalCount">
+                <option value="3">3 soal</option>
+                <option value="5" selected>5 soal</option>
+                <option value="10">10 soal</option>
+              </select>
+            </div>
+            <button class="btn-primary" onclick="generateSoal()">
+              🎯 Generate Soal
+            </button>
+            <div id="soalOutput" class="ai-output hidden"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div id="pageDashboard" class="page hidden">
+      <div class="page-header">
+        <h1>📊 Dashboard Saya</h1>
+        <p id="dashboardWelcome">Selamat datang!</p>
+      </div>
+      <div class="dashboard-grid">
+        <div class="dash-card glass-card">
+          <div class="dash-stat">
+            <span class="dash-icon">📥</span>
+            <div>
+              <div class="dash-num" id="statDownloads">0</div>
+              <div class="dash-label">Download</div>
+            </div>
+          </div>
+        </div>
+        <div class="dash-card glass-card">
+          <div class="dash-stat">
+            <span class="dash-icon">❤️</span>
+            <div>
+              <div class="dash-num" id="statFavorites">0</div>
+              <div class="dash-label">Favorit</div>
+            </div>
+          </div>
+        </div>
+        <div class="dash-card glass-card">
+          <div class="dash-stat">
+            <span class="dash-icon">🕒</span>
+            <div>
+              <div class="dash-num" id="statHistory">0</div>
+              <div class="dash-label">Riwayat</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section-header" style="margin-top:2rem">
+        <h2>🕒 Riwayat Terakhir</h2>
+      </div>
+      <div id="historyList" class="list-container glass-card">
+        <p class="empty-state">Belum ada riwayat</p>
+      </div>
+    </div>
+
+    <!-- FAVORITES PAGE -->
+    <div id="pageFavorites" class="page hidden">
+      <div class="page-header">
+        <h1>❤️ Materi Favorit</h1>
+      </div>
+      <div class="materi-grid" id="favoritesGrid">
+        <p class="empty-state">Belum ada favorit</p>
+      </div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div id="pageHistory" class="page hidden">
+      <div class="page-header">
+        <h1>🕒 Riwayat Download</h1>
+      </div>
+      <div id="historyGrid" class="list-container glass-card">
+        <p class="empty-state">Belum ada riwayat</p>
+      </div>
+    </div>
+
+    <!-- ADMIN PAGE -->
+    <div id="pageAdmin" class="page hidden">
+      <div class="page-header">
+        <h1>⚙️ Panel Admin</h1>
+        <p>Kelola konten dan pengguna EduHub</p>
+      </div>
+      <div class="admin-tabs">
+        <button class="admin-tab active" onclick="switchAdminTab('materi')">📚 Materi</button>
+        <button class="admin-tab" onclick="switchAdminTab('users')">👤 Pengguna</button>
+        <button class="admin-tab" onclick="switchAdminTab('upload')">➕ Upload</button>
+      </div>
+
+      <!-- Admin: Materi -->
+      <div id="adminTabMateri" class="admin-tab-content">
+        <div id="adminMateriList" class="list-container"></div>
+      </div>
+
+      <!-- Admin: Users -->
+      <div id="adminTabUsers" class="admin-tab-content hidden">
+        <div id="adminUserList" class="list-container"></div>
+      </div>
+
+      <!-- Admin: Upload -->
+      <div id="adminTabUpload" class="admin-tab-content hidden">
+        <div class="upload-form glass-card">
+          <h3>Upload Materi Baru</h3>
+          <div class="form-group">
+            <label>Judul Materi</label>
+            <input type="text" id="uploadJudul" placeholder="Contoh: Trigonometri Dasar" />
+          </div>
+          <div class="form-group">
+            <label>Deskripsi</label>
+            <textarea id="uploadDeskripsi" rows="3" placeholder="Deskripsi singkat materi..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Kelas</label>
+              <select id="uploadKelas">
+                <option value="10">Kelas 10</option>
+                <option value="11">Kelas 11</option>
+                <option value="12">Kelas 12</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Mata Pelajaran</label>
+              <select id="uploadMapel">
+                <option value="matematika">Matematika</option>
+                <option value="fisika">Fisika</option>
+                <option value="kimia">Kimia</option>
+                <option value="biologi">Biologi</option>
+                <option value="bahasa_indonesia">Bhs. Indonesia</option>
+                <option value="bahasa_inggris">Bhs. Inggris</option>
+                <option value="sejarah">Sejarah</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Tipe File</label>
+            <select id="uploadTipe">
+              <option value="pdf">PDF</option>
+              <option value="ppt">PPT</option>
+              <option value="video">Video</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>URL File / Link</label>
+            <input type="url" id="uploadUrl" placeholder="https://..." />
+          </div>
+          <div class="form-group">
+            <label>URL Thumbnail (opsional)</label>
+            <input type="url" id="uploadThumb" placeholder="https://..." />
+          </div>
+          <button class="btn-primary" onclick="handleUpload()">
+            ➕ Upload Materi
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ===== MATERI DETAIL MODAL ===== -->
+  <div id="materiModal" class="modal-backdrop hidden">
+    <div class="modal-box modal-wide glass-card">
+      <button class="modal-close" onclick="closeMateriModal()">✕</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
